@@ -1,0 +1,112 @@
+#### BRIEF INSTALL AND USAGE GUIDE FOR FlexLm License Monitor by John Reiser, with edits by Stephen C. Host. Guide written by Stephen C. Host P. Eng. V1.0 May 2021
+####
+#### What is this tool? It's a FlexLM license monitor tool used to monitor software licenses. It can only monitor FlexLM based products, nothing else. See bottom
+#### for a list of what this is tested and working on to see if your vendor daemon is supported. Just about all FlexLM based will work though.
+####
+#### Why do I want this? If you are here you know that monitoring tools are expensive and nothing is available open source. This tool WORKS. It will also help you 
+#### show your boss how much your CAD or other software packages are utilized. Or it helps you understand your usage/peak times. Or helps you understand you don't use 
+#### what you own and perhaps you can save some money cutting what you don't need. Or you just like pretty graphs. Whatever, you know why you want this :)
+####
+#### This text is intended to help installers complete a deployment of this great tool. This is not plug and play and does not work without significant modification.
+#### You are required to be comfortable with bash, scripting, working with python, javascript, and HTML to successfully get this to work along with being adept at 
+#### building a UNIX/Linux system with full OS, MySQL, PHP and Apache configuration. If this is you then please read on, these notes are intended to help you get
+#### the most out of this great tool, otherwise you might need the services of a knowledgeable consultant to deploy this successfully.
+####
+####
+#### FlexLM License Monitor only works with FlexLM based license servers. It works with any version of lmutil (Flexera/Macrovision FlexLM) under any GNU Compatible OS. It #### will NOT monitor other products such as DSLS. If you need to monitor non FlexLM produts, a propriety solution is what you need.
+
+### What OS can I run this on?
+
+Best results will come with Linux based installs, but any Unix or *BSD install will work just fine if you can get the full GNU tools and binaries for your OS. (This includes OSX, but see lmutil note below for limitations). For example, I (Stephen Host) have this tool working great under AIX 6.3L for the last 9 years. While it was quite an effort to get the GNU binaries installed on this non GNU OS (This was a fun challenge), it functions just fine  and has run reliably for years.
+Will this run on Windows? If you can get a full GNU Windows Apache MySQL PHP install going - try it, it's not impossible. Let us know if you do!
+
+####This text comes in four sections, LMUTIL, INSTALLATION INSTRUCTIONS/TIPS, FAQ, and TESTED SOFTWARE PACKAGES
+
+### LMUTIL - the heart of this.
+
+lmutil - not included (you have to find a copy of this yourself as provided by your software vendor)
+
+For people installing on linux you'll find this deployment easy. lmutil is easy to find in Linux form and it will monitor any server under any other OS. If you can get GNU tools going on Windows, it would also be fairly trivial. However for anyone on a more exotic Unix or Unix like OS You need a copy of lmutil compiled for your OS. Since Flexera/Macrovision has supported multiple Unix operating systems over the years, these binaries are available if you look hard enough for it (In particular, AIX, Solaris, IRIX, HPUX). I was successful in finding a copy of AIX from one of my CAD packages that still supported it. If you cannot find lmutil for your server OS that will perform all the monitoring, it will not work and you should abandon your install as this is mandatory.
+
+You might also require a NEWER version of lmutil for some vendor daemons in order for certain licenses to be monitored, in order to confirm if these are working make sure each line in your update_licenses_db.sh working properly. On some older versions of lmutil it may fail to report licenses. For these situations i have /usr/sbin/lmutil and /usr/sbin/lmutil2 , 3, etc for different (newer) versions just in case that have served me well.
+
+### INSTALLATION INSTRUCTIONS / TIPS
+
+Make sure to follow the requirements found in readme.txt that comes with this package.
+
+run the create tables script found in SQL - follow readme.txt for how, you only have to do this once
+
+Assuming you have Linux/Unix working, Apache configured with a tested and working home directory, and PHP tested, copy the files into that home directory. Test index.html to make sure it loads. Not much should happen, but it'll be a start.
+
+Next you'll be editing files to create the hooks for your databases. Start with ONE vendor daemon/feature first, once you get one going, you will have an understanding of how it fits and you can add as many more as you want following the same template. This tool will automatically create and update the database tables in mysql for you, you don't need to do anyhting else after you run the create tables script above. Here you'll be going through the motions to line up a monitor call with a database and displaying the graph in index.html.
+
+starting in /monitor directory, edit the following three files:
+
+update_license_db.sh - . Start with update_license_db.sh - for each vendor daemon (license) you wish to monitor, add a new line here (such as /usr/bin/lmutil lmstat -c 27000@licenseserveraddress -f feature ) where you make sure the port, server address, and feature name you are monitoring are correct. Once you have each line functional, add it to your script. To be sure, you can test on the command line first.
+
+track_users_mysql.py - in this file find start at line 30, the variable named monitors. Using John's examples, add as many features as you have added in update_license_db.sh one for each database you are looking to monitor. REMEMBER: you can only monitor ONE feature per vendor daemon at a time, each feature will become it's own database and line in all these files you are editing. It does not aggregate all of it for you, you have to set each feature independently no matter how many your vendor daemon reports
+
+record_licenses.py - Starting on line 28, search= variable has to be modified. This is where you set the database names for each feature. This is where the magic happens as it recoginzes the strings from the output of lmutil and assigned a 'db' to each. Edit this very carefully and make sure each feature name you are editing has a unique name
+
+In the root directory (main HTML root) you'll edit the following:
+
+render_graphs.py - updated the licenses= variable to match the database names you gave in record_licenses.py. You'll add enough here to cover all the licenses you are adding to monitoring. If you use my added code, you'll also have the hline option to give your graphs a nice red line. For each database, change the name to your database names, and add the number of licenses you are monitoring so the graphs look nice and pretty and your engineering managers know exactly how many you own today. This will help you justify more licenses to purchase.
+
+you're almost done!
+
+Now edit index.html - notice how each graph is repeated with some HTML code. You'll be copying/pasting these repeated code snippits and editing each one to match the database name you've created above, pay careful attention to the python code calling and license= stanza. make sure your div_numLICENSE is also updated so each one is unique. Replicate each stanza and make sure all the code is unique and matches the database you are calling in the python script.
+
+LASTLY - to test all of this, you'll run update_license_db.sh - this is where everything flows from, so run this every few minutes to test, and see if data shows up. Once you have data showing up in a graph, you've got it. Then go ahead and add more license monitors, repeating as required. But before you add too many, make sure you read my FAQ as there are limitations you should be aware of.
+
+FINAL STEP: add update_license_db.sh to a crontab (or windows task scheduler if you are brave to try windows) at a schedule that you determine works for you. I run mine every 5 minutes.
+
+You should be done, but 99% of time you've made a small mistake somewhere and you have to review all this code for 100% accuracy in ALL files.
+
+FAQ/LIMITATIONS/HELP
+
+
+	Q) My graphs aren't showing anything! What do I do?
+	a) RRD requires time before it will update the database - about 10 minutes before the daily graph will show anything - if you see anyhting in the daily graph congrats, it's working. The weekly/monthly/yearly graphs may take even longer as they may need up to a weeks worth of data before they begin displaying any data. Again get the daily graph working first and the rest will follow and you're fine.
+
+	q) It's still not working!
+	a) Baby steps first - start by adding ONE license and connect the dots as above. If you get one working, you can easily add more. Review the code carefully, make sure everything is 100% correct and accurate, your bash scripts, your python, your HTML, everything. Make sure your lmutil lines are working as intended, if they are they will ONLY show you the users of that feature and nothing else. If you have a firewall in the way, make sure that's turned off, again, you can test your lmutil scripts from update_licenses_db.sh from the command line without running through the database or trying to update the entire package or SQL databases.
+
+	q) My CPU load is stupid high! What gives?
+	a) Make sure the monitors you've added to update_licenses_db.sh are still functional and not offline. If you monitor multiple servers in multiple locations (you can do this) if one server/monitor is non functional, then it may affect performance. Make sure they are all online and responsive and you won't have an isseu
+
+	q) Can I monitor multiple servers?
+	a) YES - absolutely - I monitor multiple servers in multiple geographies without issue.
+
+	q) Can I monitor multiple instances of the same feature and vendor?
+	a) NO! This is the only limitation of this tool - if you want to monitor Autocad Mechanical 2004 on 3 different servers AND the feature names are IDENTICAL it does NOT work. The feature name you monitor MUST be 100% unique amongst all of what you monitor to have a database for it. However, this is untested, but if you monitor multiple servers with the exact same feature name it just might aggregate them all together, it may not, at your own risk!
+
+	q)I get periods where the graph clearly has breaks where it misses data
+	a)Your servers performance is either too slow, network issues, or your server or the license server rebooted/went down. Check your CPU load average and if it's stupid high, adjust something. Change your crontab from 5 minutes to 10 minutes. Reduce the number of monitors. Remove monitors no longer online or servers that are discontinued.
+
+
+TESTED AND WORKING:
+Solidworks Network License Server (it's just FlexLM)
+Ansys (again, FlexLM)
+AUTOCAD (on premesis licenses only)
+Minitab
+Siemens Teamcenter
+Siemens NX
+Siemens I-DEAS
+Anything Siemens that uses FlexLM (!)
+PTC products that use FlexLM (Pro Engineer, Creo, Mathcad, etc)
+Avaya FlexLM licenses
+Abaqus by Dassault Systemes if FlexLM (not DSLS)
+NEI Nastran
+
+
+	
+
+
+
+
+
+
+
+
+
+
