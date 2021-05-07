@@ -1,5 +1,6 @@
 FlexLM License Monitor README
 Author: John Reiser <reiser@rowan.edu>
+With added code/options by Stephen C. Host, P. Eng. (steve@hostovsky.com) in 2021 to encourage others to contribute. I know there are a few of us out there still using this great free tool.
 
 The FlexLM License Monitor will keep an ongoing record of commercial software usage. Software licenses managed with the FlexLM (lmgrd, lmutil) license software can be monitored using this tool.
 
@@ -7,7 +8,8 @@ The current version of this tool requires the following:
 - Python
 -- modules: MySQLdb, rrdtool 
 - RRDtool
-The script has been tested on Linux/Apache. 
+- jquery.js for your web server
+The script has been tested on Linux/Apache, but any GNU based Unix should work if you can meet all prerequisites (it's also tested/working on AIX 6.3L with all GNU binaries installed as needed)
 For an example of this tool in action, visit: http://gis.rowan.edu/licenses/
 
 Files contained in this project:
